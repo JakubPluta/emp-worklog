@@ -12,7 +12,7 @@ from worklog.database.session import async_engine, async_session
 from worklog.main import app
 from worklog.models import Base, User
 
-default_user_id = "b75365d9-7bf9-4f54-add5-aeab333a087b"
+default_user_id = "user_id"
 default_user_email = "geralt@wiedzmin.pl"
 default_user_password = "geralt"
 default_user_password_hash = security.get_password_hash(default_user_password)
@@ -30,23 +30,20 @@ def event_loop():
 
 
 @pytest_asyncio.fixture(scope="session")
-async def test_db_setup_sessionmaker():
-    # assert if we use TEST_DB URL for 100%
-    assert config.settings.ENVIRONMENT == "PYTEST"
+async def test_db_setup():
+    assert config.settings.ENVIRONMENT == "TEST"
 
-    # always drop and create test db tables between tests session
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def session(test_db_setup_sessionmaker) -> AsyncGenerator[AsyncSession, None]:
+async def session(test_db_setup) -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
         yield session
 
-        # delete all data from all tables after test
-        for name, table in Base.metadata.tables.items():
+        for _, table in Base.metadata.tables.items():
             await session.execute(delete(table))
         await session.commit()
 
@@ -59,7 +56,7 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest_asyncio.fixture
-async def default_user(test_db_setup_sessionmaker) -> User:
+async def default_user(test_db_setup) -> User:
     async with async_session() as session:
         result = await session.execute(
             select(User).where(User.email == default_user_email)

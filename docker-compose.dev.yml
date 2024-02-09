@@ -9,9 +9,9 @@ services:
     env_file:
       - .env
     environment:
-      - POSTGRES_DB=${DEFAULT_DATABASE_DB}
-      - POSTGRES_USER=${DEFAULT_DATABASE_USER}
-      - POSTGRES_PASSWORD=${DEFAULT_DATABASE_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
   web:
     depends_on:
       - postgres
@@ -22,8 +22,8 @@ services:
     env_file:
       - .env
     environment:
-      - DEFAULT_DATABASE_HOSTNAME=postgres
-      - DEFAULT_DATABASE_PORT=5432
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
     ports:
       - 80:8000
 

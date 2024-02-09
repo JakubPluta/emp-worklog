@@ -1,15 +1,12 @@
-"""Black-box security shortcuts to generate JWT tokens and password hashing and verifcation."""
-
 import time
 
 import jwt
 from passlib.context import CryptContext
-from pydantic import BaseModel
 
 from worklog import config
-from worklog.schemas.responses import AccessTokenResponse
+from worklog.schemas.auth import AccessToken, RefreshToken, JWTTokenPayload
 
-JWT_ALGORITHM = "HS256"
+JWT_ALGORITHM = config.settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_SECS = config.settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
 REFRESH_TOKEN_EXPIRE_SECS = config.settings.REFRESH_TOKEN_EXPIRE_MINUTES * 60
 PWD_CONTEXT = CryptContext(
@@ -19,14 +16,8 @@ PWD_CONTEXT = CryptContext(
 )
 
 
-class JWTTokenPayload(BaseModel):
-    sub: str | int
-    refresh: bool
-    issued_at: int
-    expires_at: int
 
-
-def create_jwt_token(subject: str | int, exp_secs: int, refresh: bool):
+def create_jwt_token(subject: str | int, exp_secs: int, refresh: bool) -> tuple[str, int, int]:
     """Creates jwt access or refresh token for user.
 
     Args:
@@ -52,7 +43,7 @@ def create_jwt_token(subject: str | int, exp_secs: int, refresh: bool):
     return encoded_jwt, expires_at, issued_at
 
 
-def generate_access_token_response(subject: str | int):
+def generate_access_token_response(subject: str | int) -> AccessToken:
     """Generate tokens and return AccessTokenResponse"""
     access_token, expires_at, issued_at = create_jwt_token(
         subject, ACCESS_TOKEN_EXPIRE_SECS, refresh=False
@@ -60,7 +51,7 @@ def generate_access_token_response(subject: str | int):
     refresh_token, refresh_expires_at, refresh_issued_at = create_jwt_token(
         subject, REFRESH_TOKEN_EXPIRE_SECS, refresh=True
     )
-    return AccessTokenResponse(
+    return AccessToken(
         token_type="Bearer",
         access_token=access_token,
         expires_at=expires_at,

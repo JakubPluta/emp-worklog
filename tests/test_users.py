@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from worklog.main import app
 from worklog.models import User
-from worklog.tests.conftest import (
+from tests.conftest import (
     default_user_email,
     default_user_id,
     default_user_password_hash,
