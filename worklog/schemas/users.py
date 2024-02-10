@@ -1,11 +1,11 @@
-from pydantic import BaseModel, ConfigDict
-from pydantic import EmailStr, UUID4
+from pydantic import UUID4, BaseModel, ConfigDict, EmailStr
+
 
 class UserBase(BaseModel):
     email: EmailStr
     name: str
     is_active: bool = True
-    
+
 
 class UserUpdate(UserBase):
     password: str
@@ -19,11 +19,10 @@ class UserCreate(UserBase):
 
 
 class UserInDB(UserBase):
-    id: str
+    id: UUID4
     hashed_password: str
 
 
 class UserOut(UserBase):
     id: UUID4
     model_config = ConfigDict(from_attributes=True)
-    

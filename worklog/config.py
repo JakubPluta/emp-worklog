@@ -2,8 +2,10 @@ import tomllib
 from functools import cached_property
 from pathlib import Path
 from typing import Literal
+
 from pydantic import AnyHttpUrl, EmailStr, PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from worklog.log import get_logger
 
 log = get_logger(__name__)
@@ -13,8 +15,6 @@ PROJECT_DIR = Path(__file__).parent.parent
 log.info(f"PROJECT_DIR: {PROJECT_DIR}")
 with open(f"{PROJECT_DIR}/pyproject.toml", "rb") as f:
     PYPROJECT_CONTENT = tomllib.load(f)["tool"]["poetry"]
-
-
 
 
 class Settings(BaseSettings):
@@ -73,21 +73,21 @@ class Settings(BaseSettings):
                 path=self.TEST_DATABASE_DB,
             )
         )
-        
+
     def resolve_database_url(self) -> str:
         log.debug("Resolving database URL based on ENVIRONMENT %s", self.ENVIRONMENT)
         if self.ENVIRONMENT == "TEST":
             return self.TEST_SQLALCHEMY_DATABASE_URI
         if self.ENVIRONMENT == "DEV" or self.ENVIRONMENT == "PROD":
             return self.DEFAULT_SQLALCHEMY_DATABASE_URI
-        log.debug("Invalid environment %s. Available: DEV, TEST, PROD", self.ENVIRONMENT)
+        log.debug(
+            "Invalid environment %s. Available: DEV, TEST, PROD", self.ENVIRONMENT
+        )
         raise ValueError("Invalid environment")
 
     model_config = SettingsConfigDict(
         env_file=f"{PROJECT_DIR}/.env", case_sensitive=True
     )
-    
-
 
 
 settings: Settings = Settings()  # type: ignore

@@ -16,8 +16,9 @@ PWD_CONTEXT = CryptContext(
 )
 
 
-
-def create_jwt_token(subject: str | int, exp_secs: int, refresh: bool) -> tuple[str, int, int]:
+def create_jwt_token(
+    subject: str | int, exp_secs: int, refresh: bool
+) -> tuple[str, int, int]:
     """Creates jwt access or refresh token for user.
 
     Args:
@@ -53,7 +54,7 @@ def generate_access_token_response(subject: str | int) -> AccessToken:
     Returns:
         AccessToken: The generated access token response.
     """
-  
+
     access_token, expires_at, issued_at = create_jwt_token(
         subject, ACCESS_TOKEN_EXPIRE_SECS, refresh=False
     )

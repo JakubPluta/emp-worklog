@@ -2,13 +2,10 @@ from httpx import AsyncClient, codes
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from tests.conftest import (default_user_email, default_user_id,
+                            default_user_password_hash)
 from worklog.main import app
 from worklog.models import User
-from tests.conftest import (
-    default_user_email,
-    default_user_id,
-    default_user_password_hash,
-)
 
 
 async def test_read_current_user(client: AsyncClient, default_user_headers):

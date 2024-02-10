@@ -1,8 +1,8 @@
+from conftest import default_user_email, default_user_password
 from httpx import AsyncClient, codes
 
 from worklog.main import app
 from worklog.models import User
-from conftest import default_user_email, default_user_password
 
 
 async def test_auth_access_token(client: AsyncClient, default_user: User):

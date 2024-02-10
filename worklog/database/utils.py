@@ -1,4 +1,6 @@
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, AsyncEngine
+from sqlalchemy.ext.asyncio import (AsyncEngine, async_sessionmaker,
+                                    create_async_engine)
+
 
 def get_async_engine(database_url: str, echo=False, pool_pre_ping=True) -> AsyncEngine:
     """
@@ -7,7 +9,7 @@ def get_async_engine(database_url: str, echo=False, pool_pre_ping=True) -> Async
     Args:
         database_url (str): The URL of the database.
         echo (bool, optional): Whether to enable logging. Defaults to False.
-        pool_pre_ping (bool, optional): Whether to ping the database before creating the engine. 
+        pool_pre_ping (bool, optional): Whether to ping the database before creating the engine.
             Defaults to True.
 
     Returns:
@@ -16,6 +18,7 @@ def get_async_engine(database_url: str, echo=False, pool_pre_ping=True) -> Async
 
     engine = create_async_engine(database_url, echo=echo, pool_pre_ping=pool_pre_ping)
     return engine
+
 
 def get_async_session(
     database_url: str, echo=False, pool_pre_ping=True, expire_on_commit=False
@@ -26,7 +29,7 @@ def get_async_session(
     Args:
         database_url (str): The URL of the database.
         echo (bool, optional): Whether to enable logging. Defaults to False.
-        pool_pre_ping (bool, optional): Whether to ping the database before creating the engine. 
+        pool_pre_ping (bool, optional): Whether to ping the database before creating the engine.
             Defaults to True.
         expire_on_commit (bool, optional): Whether to expire the session on commit. Defaults to False.
 

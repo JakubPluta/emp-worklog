@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+
 from worklog.api import api_router
 from worklog.config import settings
-
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

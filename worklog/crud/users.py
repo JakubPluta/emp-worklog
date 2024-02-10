@@ -1,12 +1,11 @@
-
 from typing import List
+
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from worklog.models.users import User
 
 
-async def get_user_by_id(
-    session: AsyncSession, user_id: str
-) -> User | None:
+async def get_user_by_id(session: AsyncSession, user_id: str) -> User | None:
     """
     Asynchronously retrieves a user by their ID using the provided session and user ID.
 
@@ -19,6 +18,7 @@ async def get_user_by_id(
     """
     results = await session.query(User).filter(User.id == user_id).first()
     return results
+
 
 async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
     """
@@ -34,6 +34,7 @@ async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
     results = await session.query(User).filter(User.email == email).first()
     return results
 
+
 async def get_all_users(session: AsyncSession) -> List[User]:
     """
     Asynchronously retrieves all users from the database.
@@ -46,3 +47,20 @@ async def get_all_users(session: AsyncSession) -> List[User]:
     """
     results = await session.query(User).all()
     return results
+
+
+async def create_user(session: AsyncSession, user: User) -> User:
+    """
+    Asynchronously creates a new user in the database.
+
+    Args:
+        session (AsyncSession): The async session to interact with the database.
+        user (User): The user object to create.
+
+    Returns:
+        User: The created user object.
+    """
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    return user
