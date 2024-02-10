@@ -8,19 +8,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worklog import config, security
-from worklog.database.session import async_session
-from worklog.models import User
+from worklog.database import get_db
+from worklog.models.users import User
 
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl="auth/access-token")
 
 
-async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    async with async_session() as session:
-        yield session
-
-
 async def get_current_user(
-    session: AsyncSession = Depends(get_session), token: str = Depends(reusable_oauth2)
+    session: AsyncSession = Depends(get_db), token: str = Depends(reusable_oauth2)
 ) -> User:
     try:
         payload = jwt.decode(

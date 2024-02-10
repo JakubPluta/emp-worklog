@@ -4,7 +4,7 @@ import jwt
 from passlib.context import CryptContext
 
 from worklog import config
-from worklog.schemas.auth import AccessToken, RefreshToken, JWTTokenPayload
+from worklog.schemas.auth import AccessToken
 
 JWT_ALGORITHM = config.settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_SECS = config.settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
@@ -44,7 +44,16 @@ def create_jwt_token(subject: str | int, exp_secs: int, refresh: bool) -> tuple[
 
 
 def generate_access_token_response(subject: str | int) -> AccessToken:
-    """Generate tokens and return AccessTokenResponse"""
+    """
+    Generate an access token response for the given subject.
+
+    Args:
+        subject (str | int): The subject for which the access token is generated.
+
+    Returns:
+        AccessToken: The generated access token response.
+    """
+  
     access_token, expires_at, issued_at = create_jwt_token(
         subject, ACCESS_TOKEN_EXPIRE_SECS, refresh=False
     )
@@ -63,18 +72,27 @@ def generate_access_token_response(subject: str | int) -> AccessToken:
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verifies plain and hashed password matches
+    """
+    Verify if a plain password matches a hashed password.
 
-    Applies passlib context based on bcrypt algorithm on plain passoword.
-    It takes about 0.3s for default 12 rounds of SECURITY_BCRYPT_DEFAULT_ROUNDS.
+    Args:
+        plain_password (str): The plain password to be verified.
+        hashed_password (str): The hashed password to compare with.
+
+    Returns:
+        bool: True if the plain password matches the hashed password, False otherwise.
     """
     return PWD_CONTEXT.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    """Creates hash from password
+    """
+    Generate the hash value of a password.
 
-    Applies passlib context based on bcrypt algorithm on plain passoword.
-    It takes about 0.3s for default 12 rounds of SECURITY_BCRYPT_DEFAULT_ROUNDS.
+    Args:
+        password (str): The password to be hashed.
+
+    Returns:
+        str: The hash value of the password.
     """
     return PWD_CONTEXT.hash(password)

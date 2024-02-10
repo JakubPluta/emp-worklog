@@ -7,18 +7,19 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from worklog.api import deps
-from worklog.core import config, security
+from worklog.api import dependencies
+from worklog import config, security
 from worklog.models import User
-from worklog.schemas.requests import RefreshTokenRequest
-from worklog.schemas.responses import AccessTokenResponse
+from worklog.schemas.auth import AccessToken, RefreshToken, JWTTokenPayload
+from worklog.schemas.users import UserOut
+from worklog.database import get_db
 
 router = APIRouter()
 
 
-@router.post("/access-token", response_model=AccessTokenResponse)
+@router.post("/access-token", response_model=AccessToken)
 async def login_access_token(
-    session: AsyncSession = Depends(deps.get_session),
+    session: AsyncSession = Depends(get_db),
     form_data: OAuth2PasswordRequestForm = Depends(),
 ):
     """OAuth2 compatible token, get an access token for future requests using username and password"""
@@ -35,10 +36,10 @@ async def login_access_token(
     return security.generate_access_token_response(str(user.id))
 
 
-@router.post("/refresh-token", response_model=AccessTokenResponse)
+@router.post("/refresh-token", response_model=AccessToken)
 async def refresh_token(
-    input: RefreshTokenRequest,
-    session: AsyncSession = Depends(deps.get_session),
+    input: RefreshToken,
+    session: AsyncSession = Depends(get_db),
 ):
     """OAuth2 compatible token, get an access token for future requests using refresh token"""
     try:
@@ -54,7 +55,7 @@ async def refresh_token(
         )
 
     # JWT guarantees payload will be unchanged (and thus valid), no errors here
-    token_data = security.JWTTokenPayload(**payload)
+    token_data = JWTTokenPayload(**payload)
 
     if not token_data.refresh:
         raise HTTPException(
