@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, ConfigDict, EmailStr
 
 
@@ -28,3 +29,10 @@ class RefreshToken(BaseModel):
     """Refresh token response"""
 
     refresh_token: str
+
+
+class UserRegister(BaseModel):
+    email: str
+    password: str
+    name: str
+    is_active: bool = True

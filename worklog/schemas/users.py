@@ -11,6 +11,8 @@ class UserUpdate(UserBase):
     password: str
     is_superuser: bool = False
 
+class UserUpdatePassowrd(BaseModel):
+    password: str
 
 class UserCreate(UserBase):
     email: EmailStr
@@ -19,8 +21,8 @@ class UserCreate(UserBase):
 
 
 class UserInDB(UserBase):
-    id: UUID4
     hashed_password: str
+    is_superuser: bool = False
 
 
 class UserOut(UserBase):

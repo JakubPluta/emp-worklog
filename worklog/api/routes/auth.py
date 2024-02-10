@@ -7,11 +7,12 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worklog import config, security
+from worklog.api.dependencies import get_current_user
 from worklog.crud.users import get_user_by_email, get_user_by_id
 from worklog.database import get_db
 from worklog.models import User
-from worklog.schemas.auth import AccessToken, JWTTokenPayload, RefreshToken
-from worklog.schemas.users import UserCreate, UserInDB, UserOut
+from worklog.schemas.auth import AccessToken, JWTTokenPayload, RefreshToken, UserRegister
+from worklog.schemas.users import UserCreate, UserInDB, UserOut, UserUpdate, UserUpdatePassowrd
 
 router = APIRouter()
 
@@ -95,29 +96,50 @@ async def refresh_token(
 
 
 
-@router.post("/register", response_model=UserOut)
-async def register_user(
+@router.post("/reset-password", response_model=UserOut)
+async def reset_current_user_password(
+    user_update_password: UserUpdatePassowrd,
     session: AsyncSession = Depends(get_db),
-    user: UserCreate = Depends(),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    An asynchronous function that registers a new user.
+    Reset the current user's password.
 
     Args:
-        session (AsyncSession): The database session.
-        user (UserCreate): The user data.
+        user_update_password (UserUpdatePassowrd): The updated password for the user.
+        session (AsyncSession, optional): The async session for the database. Defaults to Depends(get_db).
+        current_user (User, optional): The current user. Defaults to Depends(get_current_user).
 
     Returns:
-        UserOut: The created user.
+        User: The current user with the updated password.
     """
-    u = get_user_by_email(session, user.email)
-    if u:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
-    
-    
-    user_in = UserInDB(
-        **user.model_dump(exclude_unset=True, exclude_defaults=True),
-        hashed_password=security.get_password_hash(user.password),
-    )
-    await create_user(session, user_in)
-    
+
+    current_user.hashed_password = security.get_password_hash(user_update_password.password)
+    session.add(current_user)
+    await session.commit()
+    return current_user
+
+
+@router.post("/register", response_model=UserOut)
+async def register_new_user(
+    new_user: UserRegister,
+    session: AsyncSession = Depends(get_db),
+):
+    """
+    Register a new user.
+
+    Args:
+        new_user (UserRegister): The user to register.
+        session (AsyncSession, optional): The database session.
+
+    Returns:
+        UserOut: The registered user.
+    """
+
+    user = await get_user_by_email(session, new_user.email)
+    if user is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cannot use this email address")
+    user = UserInDB(**new_user.dict())
+    session.add(user)
+    await session.commit()
+    return user

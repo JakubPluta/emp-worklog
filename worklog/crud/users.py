@@ -3,6 +3,8 @@ from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worklog.models.users import User
+from worklog.schemas.auth import UserRegister
+from worklog.security import verify_password
 
 
 async def get_user_by_id(session: AsyncSession, user_id: str) -> User | None:
@@ -49,7 +51,7 @@ async def get_all_users(session: AsyncSession) -> List[User]:
     return results
 
 
-async def create_user(session: AsyncSession, user: User) -> User:
+async def create_user(session: AsyncSession, user: UserRegister) -> User:
     """
     Asynchronously creates a new user in the database.
 
@@ -60,7 +62,23 @@ async def create_user(session: AsyncSession, user: User) -> User:
     Returns:
         User: The created user object.
     """
-    session.add(user)
+    user_create = user.model_dump(exclude_unset=True, exclude_none=True)
+    user_to_db = User(**user_create)
+    session.add(user_to_db)
     await session.commit()
-    await session.refresh(user)
+    await session.refresh(user_to_db)
+    return user_to_db
+
+async def is_superuser(user: User) -> bool:
+    return user.is_superuser
+
+async def is_active(user: User) -> bool:
+    return user.is_active
+
+async def authenticate_user(session: AsyncSession, email: str, password: str) -> User | None:
+    user = await get_user_by_email(session, email)
+    if not user:
+        return None
+    if not verify_password(password):
+        return None
     return user
