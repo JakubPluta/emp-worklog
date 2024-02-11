@@ -7,13 +7,12 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worklog import config, security
-from worklog.api.dependencies import get_current_user
-from worklog.crud.users import get_user_by_email, get_user_by_id
 from worklog.database import get_db
 from worklog.models import User
 from worklog.schemas.auth import AccessToken, JWTTokenPayload, RefreshToken, UserRegister
 from worklog.schemas.users import UserCreate, UserInDB, UserOut, UserUpdate, UserUpdatePassowrd
-
+from worklog.crud import users as users_crud
+from worklog.api.dependencies import get_current_user
 router = APIRouter()
 
 
@@ -33,7 +32,7 @@ async def login_for_access_token(
         AccessToken: The access token response.
     """
 
-    user = await get_user_by_email(session, form_data.username)
+    user = await users_crud.get_user_by_email(session, form_data.username)
 
     if user is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect email or password")
@@ -87,7 +86,7 @@ async def refresh_token(
             detail="Could not validate credentials, token expired or not yet valid",
         )
 
-    user = await get_user_by_id(session, token_data.sub)
+    user = await users_crud.get_user_by_id(session, token_data.sub)
 
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -136,10 +135,9 @@ async def register_new_user(
         UserOut: The registered user.
     """
 
-    user = await get_user_by_email(session, new_user.email)
+    user = await users_crud.get_user_by_email(session, new_user.email)
     if user is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cannot use this email address")
     user = UserInDB(**new_user.dict())
-    session.add(user)
-    await session.commit()
+    await users_crud.create_user(session, user)
     return user

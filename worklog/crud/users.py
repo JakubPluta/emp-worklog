@@ -37,7 +37,7 @@ async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
     return results
 
 
-async def get_all_users(session: AsyncSession) -> List[User]:
+async def get_all_users(session: AsyncSession, offset: int, limit: int) -> List[User]:
     """
     Asynchronously retrieves all users from the database.
 
@@ -47,7 +47,7 @@ async def get_all_users(session: AsyncSession) -> List[User]:
     Returns:
         list[User]: A list of user objects.
     """
-    results = await session.query(User).all()
+    results = await session.query(User).offset(offset).limit(limit).all()
     return results
 
 

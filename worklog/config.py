@@ -52,11 +52,11 @@ class Settings(BaseSettings):
         return str(
             PostgresDsn.build(
                 scheme="postgresql+asyncpg",
-                username=self.DEFAULT_DATABASE_USER,
-                password=self.DEFAULT_DATABASE_PASSWORD,
-                host=self.DEFAULT_DATABASE_HOSTNAME,
-                port=self.DEFAULT_DATABASE_PORT,
-                path=self.DEFAULT_DATABASE_DB,
+                username=self.POSTGRES_USER,
+                password=self.POSTGRES_PASSWORD,
+                host=self.POSTGRES_HOST,
+                port=self.POSTGRES_PORT,
+                path=self.POSTGRES_DB,
             )
         )
 
@@ -66,11 +66,11 @@ class Settings(BaseSettings):
         return str(
             PostgresDsn.build(
                 scheme="postgresql+asyncpg",
-                username=self.TEST_DATABASE_USER,
-                password=self.TEST_DATABASE_PASSWORD,
-                host=self.TEST_DATABASE_HOSTNAME,
-                port=self.TEST_DATABASE_PORT,
-                path=self.TEST_DATABASE_DB,
+                username=self.TEST_POSTGRES_USER,
+                password=self.TEST_POSTGRES_PASSWORD,
+                host=self.TEST_POSTGRES_HOST,
+                port=self.TEST_POSTGRES_PORT,
+                path=self.TEST_POSTGRES_DB,
             )
         )
 
