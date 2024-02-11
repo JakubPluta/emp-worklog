@@ -6,7 +6,7 @@ from worklog.crud import users as users_crud
 from worklog.security import get_password_hash
 from worklog.models import User
 from worklog.schemas.auth import AccessToken, JWTTokenPayload, RefreshToken
-from worklog.schemas.users import UserCreate, UserOut
+from worklog.schemas.users import UserCreate, UserInDB, UserOut
 from worklog.database.db import get_db
 
 router = APIRouter()
@@ -47,10 +47,9 @@ async def create_user(
     user = await users_crud.get_user_by_email(session, user_in.email)
     if user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    user = User(
-        name=user_in.name,
-        email=user_in.email,
+    user = UserInDB(
+        **user_in.model_dump(),
         hashed_password=get_password_hash(user_in.password),
     )
-    await users_crud.create_user(session, user)
-    
+    user = await users_crud.create_user(session, user)
+    return user

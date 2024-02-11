@@ -1,11 +1,11 @@
 version: "3.7"
 
 services:
-  default_database:
+  dev_database:
     restart: unless-stopped
-    image: postgres:latest
+    image: postgres:16-alpine
     volumes:
-      - default_database_data:/var/lib/postgresql/data
+      - dev_database_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -17,7 +17,7 @@ services:
 
   test_database:
     restart: unless-stopped
-    image: postgres:latest
+    image: postgres:16-alpine
     volumes:
       - test_database_data:/var/lib/postgresql/data
     environment:
@@ -30,5 +30,5 @@ services:
       - "${TEST_POSTGRES_PORT}:5432"
 
 volumes:
+  dev_database_data:
   test_database_data:
-  default_database_data:

@@ -19,7 +19,7 @@ fileConfig(config.config_file_name)  # type: ignore
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from worklog.database.base_class import Base  # noqa
+from worklog.models import Base  # noqa
 
 target_metadata = Base.metadata
 

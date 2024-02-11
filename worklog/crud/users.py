@@ -1,4 +1,5 @@
 from typing import List
+from sqlalchemy import select
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,7 +19,7 @@ async def get_user_by_id(session: AsyncSession, user_id: str) -> User | None:
     Returns:
         User | None: The user object if found, otherwise None.
     """
-    results = await session.query(User).filter(User.id == user_id).first()
+    results = await session.get(User, user_id)
     return results
 
 
@@ -33,8 +34,10 @@ async def get_user_by_email(session: AsyncSession, email: str) -> User | None:
     Returns:
         User | None: The user object if found, otherwise None.
     """
-    results = await session.query(User).filter(User.email == email).first()
-    return results
+
+    results = await session.execute(select(User).filter(User.email == email))
+    user = results.scalars().first()
+    return user
 
 
 async def get_all_users(session: AsyncSession, offset: int, limit: int) -> List[User]:
@@ -47,8 +50,9 @@ async def get_all_users(session: AsyncSession, offset: int, limit: int) -> List[
     Returns:
         list[User]: A list of user objects.
     """
-    results = await session.query(User).offset(offset).limit(limit).all()
-    return results
+    stmt = select(User).offset(offset).limit(limit)
+    results = await session.execute(stmt)
+    return results.scalars().all()
 
 
 async def create_user(session: AsyncSession, user: UserRegister) -> User:
