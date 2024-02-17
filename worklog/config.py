@@ -11,10 +11,16 @@ from worklog.log import get_logger
 log = get_logger(__name__)
 
 
+def _load_poetry_toml(project_dir: Path):
+    with open(f"{project_dir}/pyproject.toml", "rb") as f:
+        data = tomllib.load(f)["tool"]["poetry"]
+    log.debug("Loaded poetry.toml")
+    return data
+
+
 PROJECT_DIR = Path(__file__).parent.parent
-log.info(f"PROJECT_DIR: {PROJECT_DIR}")
-with open(f"{PROJECT_DIR}/pyproject.toml", "rb") as f:
-    PYPROJECT_CONTENT = tomllib.load(f)["tool"]["poetry"]
+PYPROJECT_CONTENT = _load_poetry_toml(PROJECT_DIR)
+
 
 
 class Settings(BaseSettings):
@@ -44,6 +50,7 @@ class Settings(BaseSettings):
     TEST_POSTGRES_DB: str = "postgres"
 
     FIRST_SUPERUSER_EMAIL: EmailStr
+    FIRST_SUPERUSER_NAME: str
     FIRST_SUPERUSER_PASSWORD: str
 
     @computed_field
