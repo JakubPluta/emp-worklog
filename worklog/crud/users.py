@@ -7,10 +7,11 @@ from worklog.models.users import User
 from worklog.schemas.auth import UserRegister
 from worklog.security import verify_password
 from worklog.log import get_logger
+from pydantic import UUID4
 
 log = get_logger(__name__)
 
-async def get_user_by_id(session: AsyncSession, user_id: str) -> User | None:
+async def get_user_by_id(session: AsyncSession, user_id: UUID4) -> User | None:
     """
     Asynchronously retrieves a user by their ID using the provided session and user ID.
 

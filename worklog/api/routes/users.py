@@ -8,7 +8,7 @@ from worklog.models import User
 from worklog.schemas.auth import AccessToken, JWTTokenPayload, RefreshToken
 from worklog.schemas.users import UserCreate, UserInDB, UserOut
 from worklog.database.db import get_db
-
+from pydantic import UUID4
 router = APIRouter()
 
 
@@ -20,7 +20,7 @@ async def read_current_user(
 
 @router.get("/{user_id}", response_model=UserOut)
 async def read_user(
-    user_id: str,
+    user_id: UUID4,
     session: AsyncSession = Depends(get_db),
 ) -> User:
     user = await users_crud.get_user_by_id(session, user_id)

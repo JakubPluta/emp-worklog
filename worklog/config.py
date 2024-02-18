@@ -31,7 +31,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
     BACKEND_CORS_ORIGINS: list[AnyHttpUrl] = []
-    ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1"]
+    ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1", "0.0.0.0"]
+    
+    SERVER_HOST: str
+    SERVER_PORT: int
+    
 
     PROJECT_NAME: str = PYPROJECT_CONTENT["name"]
     VERSION: str = PYPROJECT_CONTENT["version"]
