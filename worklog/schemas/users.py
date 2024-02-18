@@ -33,3 +33,5 @@ class UserOut(UserBase):
 class UserUpdateSelf(BaseModel):
     email: EmailStr
     name: str
+    password: str | None = None
+     

@@ -24,6 +24,6 @@ app.add_middleware(
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
 
 
-@app.get("/")
+@app.get("/health", status_code=200)
 def root():
     return {"message": "Hello world"}

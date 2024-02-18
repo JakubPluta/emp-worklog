@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worklog import config, security
-from worklog.crud.users import get_user_by_id
+from worklog.crud.users import users_crud
 from worklog.database import get_db
 from worklog.models.users import User
 from worklog.schemas.auth import JWTTokenPayload
@@ -93,7 +93,7 @@ async def get_current_user(
         User: The user object corresponding to the provided token.
     """
 
-    user = await get_user_by_id(session, token.sub)
+    user = await users_crud.get_user_by_id(session, token.sub)
 
     if not user:
         raise HTTPException(

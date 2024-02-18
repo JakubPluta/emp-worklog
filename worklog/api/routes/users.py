@@ -1,22 +1,25 @@
-from typing import Tuple
+from typing import List, Tuple
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from worklog.api.dependencies import get_current_superuser, get_pagination_offset_and_limit, get_current_user
-from worklog.crud import users as users_crud
+from worklog.crud.users import users_crud, UserCRUD
 from worklog.security import get_password_hash
 from worklog.models import User
 from worklog.schemas.auth import AccessToken, JWTTokenPayload, RefreshToken
 from worklog.schemas.users import UserCreate, UserInDB, UserOut, UserUpdate, UserUpdateSelf
 from worklog.database.db import get_db
 from pydantic import UUID4, EmailStr
+
+users_crud: UserCRUD
+
 router = APIRouter()
 
 
-@router.get("/me", response_model=UserOut)
+@router.get("/me", response_model=UserOut, response_model_exclude=['is_active'], status_code=status.HTTP_200_OK)
 async def read_current_user(
     current_user: User = Depends(get_current_user),
-):
+) -> User:
     """
     Retrieve the current user. 
 
@@ -29,10 +32,11 @@ async def read_current_user(
     """
     return current_user
 
-@router.get("/{user_id}", response_model=UserOut)
+@router.get("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def read_user(
     user_id: UUID4,
     session: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_superuser)
 ) -> User:
     """
     Async function to retrieve a user by their ID.
@@ -44,15 +48,16 @@ async def read_user(
     Returns:
         User: The user object if found, raises an HTTPException with status code 404 if not found.
     """
-    user = await users_crud.get_user_by_id(session, user_id)
+    user = await users_crud.get_one_by_id(session, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user
 
-@router.get("/email/{email}", response_model=UserOut)
+@router.get("/email/{email}", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def read_user_by_email(
     email: str | EmailStr,
     session: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_superuser)
 ) -> User:
     """
     Async function to retrieve a user by their email address.
@@ -69,10 +74,11 @@ async def read_user_by_email(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user
 
-@router.get("/", response_model=list[UserOut])
+@router.get("/", response_model=List[UserOut], status_code=status.HTTP_200_OK)
 async def read_users(
     pagination: Tuple[int, int] = Depends(get_pagination_offset_and_limit),
     session: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_superuser)
 ) -> list[User]:
     """
     A function to retrieve a list of users with pagination support.
@@ -85,7 +91,7 @@ async def read_users(
         list[User]: A list of User objects.
     """
     offset, limit = pagination
-    return await users_crud.get_all_users(session, offset, limit)
+    return await users_crud.get_many(session, offset=offset, limit=limit)
  
 
 
@@ -93,6 +99,7 @@ async def read_users(
 async def create_user(
     user_in: UserCreate,
     session: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_superuser)
 ):
     """
     Create a new user with the provided user data. 
@@ -115,7 +122,7 @@ async def create_user(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
     return user
 
-@router.patch("/{user_id}", response_model=UserOut)
+@router.patch("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def update_user(
     user_id: UUID4,
     user_in: UserCreate,
@@ -143,7 +150,7 @@ async def update_user(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
     return user
 
-@router.patch("/me", response_model=UserOut)
+@router.patch("/me", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def update_myself(
     user_in: UserUpdateSelf,
     session: AsyncSession = Depends(get_db),
@@ -165,3 +172,26 @@ async def update_myself(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     user = await users_crud.update_user(session, user, user_in)
     return user
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(
+    user_id: UUID4,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_superuser),
+):
+    """
+    Delete a user.
+
+    Args:
+        user_id (UUID4): The ID of the user to delete.
+        session (AsyncSession, optional): The async session for database operations. Defaults to Depends(get_db).
+        user (User, optional): The current user. Defaults to Depends(get_current_superuser).
+
+    Returns:
+        None
+    """
+    user = await users_crud.get_user_by_id(session, user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    await users_crud.delete(session, user)

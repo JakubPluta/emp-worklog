@@ -5,13 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from worklog.crud.users import users_crud
 from worklog import config, security
 from worklog.database import get_db
 from worklog.models import User
 from worklog.schemas.auth import AccessToken, JWTTokenPayload, RefreshToken, UserRegister
 from worklog.schemas.users import UserCreate, UserInDB, UserOut, UserUpdate, UserUpdatePassowrd
-from worklog.crud import users as users_crud
+
 from worklog.api.dependencies import get_current_user
 router = APIRouter()
 
