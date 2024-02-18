@@ -1,14 +1,15 @@
+from typing import Tuple
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from worklog.api.dependencies import get_pagination_offset_and_limit, get_current_user
+from worklog.api.dependencies import get_current_superuser, get_pagination_offset_and_limit, get_current_user
 from worklog.crud import users as users_crud
 from worklog.security import get_password_hash
 from worklog.models import User
 from worklog.schemas.auth import AccessToken, JWTTokenPayload, RefreshToken
-from worklog.schemas.users import UserCreate, UserInDB, UserOut
+from worklog.schemas.users import UserCreate, UserInDB, UserOut, UserUpdate, UserUpdateSelf
 from worklog.database.db import get_db
-from pydantic import UUID4
+from pydantic import UUID4, EmailStr
 router = APIRouter()
 
 
@@ -16,6 +17,16 @@ router = APIRouter()
 async def read_current_user(
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Retrieve the current user. 
+
+    Args:
+        current_user (User, optional): The current user.
+        Defaults to the value returned by get_current_user.
+
+    Returns:
+        User: The current user.
+    """
     return current_user
 
 @router.get("/{user_id}", response_model=UserOut)
@@ -23,20 +34,59 @@ async def read_user(
     user_id: UUID4,
     session: AsyncSession = Depends(get_db),
 ) -> User:
+    """
+    Async function to retrieve a user by their ID.
+
+    Args:
+        user_id (UUID4): The unique identifier of the user.
+        session (AsyncSession): The database session.
+
+    Returns:
+        User: The user object if found, raises an HTTPException with status code 404 if not found.
+    """
     user = await users_crud.get_user_by_id(session, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return user
 
+@router.get("/email/{email}", response_model=UserOut)
+async def read_user_by_email(
+    email: str | EmailStr,
+    session: AsyncSession = Depends(get_db),
+) -> User:
+    """
+    Async function to retrieve a user by their email address.
+
+    Args:
+        email (str | EmailStr): The email address of the user.
+        session (AsyncSession): The database session.
+
+    Returns:
+        User: The user object if found, raises an HTTPException with status code 404 if not found.
+    """
+    user = await users_crud.get_user_by_email(session, email)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return user
 
 @router.get("/", response_model=list[UserOut])
 async def read_users(
-    offset: int = 0,
-    limit: int = 10,
+    pagination: Tuple[int, int] = Depends(get_pagination_offset_and_limit),
     session: AsyncSession = Depends(get_db),
 ) -> list[User]:
-    users = await users_crud.get_all_users(session, offset, limit)
-    return users
+    """
+    A function to retrieve a list of users with pagination support.
+
+    Args:
+        pagination (Tuple[int, int]): A tuple containing the offset and limit for pagination.
+        session (AsyncSession): An asynchronous session for interacting with the database.
+
+    Returns:
+        list[User]: A list of User objects.
+    """
+    offset, limit = pagination
+    return await users_crud.get_all_users(session, offset, limit)
+ 
 
 
 @router.post("/", response_model=UserOut, status_code=status.HTTP_201_CREATED)
@@ -44,12 +94,74 @@ async def create_user(
     user_in: UserCreate,
     session: AsyncSession = Depends(get_db),
 ):
+    """
+    Create a new user with the provided user data. 
+    Args:
+        user_in (UserCreate): The user input data for creating a new user.
+        session (AsyncSession, optional): The async session for database operations. Defaults to Depends(get_db).
+    Returns:
+        UserOut: The user data of the newly created user.
+    """
     user = await users_crud.get_user_by_email(session, user_in.email)
     if user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
     user = UserInDB(
         **user_in.model_dump(),
         hashed_password=get_password_hash(user_in.password),
     )
-    user = await users_crud.create_user(session, user)
+    try:
+        user = await users_crud.create_user(session, user)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
+    return user
+
+@router.patch("/{user_id}", response_model=UserOut)
+async def update_user(
+    user_id: UUID4,
+    user_in: UserCreate,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_superuser),
+):
+    """
+    Update a user's data.
+
+    Args:
+        user_id (UUID4): The ID of the user to update.
+        user_in (UserCreate): The updated user data.
+        session (AsyncSession, optional): The async session for database operations. Defaults to Depends(get_db).
+
+    Returns:
+        UserOut: The updated user data.
+    """
+    user = await users_crud.get_user_by_id(session, user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    
+    try:
+        user = await users_crud.update_user(session, user, user_in)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
+    return user
+
+@router.patch("/me", response_model=UserOut)
+async def update_myself(
+    user_in: UserUpdateSelf,
+    session: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Update the current user's data.
+
+    Args:
+        user_in (UserCreate): The updated user data.
+        session (AsyncSession, optional): The async session for database operations. Defaults to Depends(get_db).
+        current_user (User, optional): The current user. Defaults to Depends(get_current_user).
+
+    Returns:
+        UserOut: The updated user data.
+    """
+    user = await users_crud.get_user_by_id(session, current_user.id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    user = await users_crud.update_user(session, user, user_in)
     return user

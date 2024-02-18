@@ -23,5 +23,5 @@ docker-down:
 	docker compose down
 
 
-run:
+dev:
 	python -m worklog.server

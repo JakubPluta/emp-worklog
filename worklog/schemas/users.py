@@ -28,3 +28,8 @@ class UserInDB(UserBase):
 class UserOut(UserBase):
     id: UUID4
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserUpdateSelf(BaseModel):
+    email: EmailStr
+    name: str
