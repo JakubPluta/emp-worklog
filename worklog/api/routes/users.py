@@ -140,7 +140,7 @@ async def update_user(
     Returns:
         UserOut: The updated user data.
     """
-    user = await users_crud.get_user_by_id(session, user_id)
+    user = await users_crud.get_one_by_id(session, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     
@@ -167,7 +167,7 @@ async def update_myself(
     Returns:
         UserOut: The updated user data.
     """
-    user = await users_crud.get_user_by_id(session, current_user.id)
+    user = await users_crud.get_one_by_id(session, current_user.id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     user = await users_crud.update_user(session, user, user_in)
@@ -191,7 +191,7 @@ async def delete_user(
     Returns:
         None
     """
-    user = await users_crud.get_user_by_id(session, user_id)
+    user = await users_crud.get_one_by_id(session, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     await users_crud.delete(session, user)

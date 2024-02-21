@@ -93,7 +93,7 @@ async def get_current_user(
         User: The user object corresponding to the provided token.
     """
 
-    user = await users_crud.get_user_by_id(session, token.sub)
+    user = await users_crud.get_one_by_id(session, token.sub)
 
     if not user:
         raise HTTPException(

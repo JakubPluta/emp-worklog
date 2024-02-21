@@ -86,7 +86,7 @@ async def refresh_token(
             detail="Could not validate credentials, token expired or not yet valid",
         )
 
-    user = await users_crud.get_user_by_id(session, token_data.sub)
+    user = await users_crud.get_one_by_id(session, token_data.sub)
 
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
