@@ -12,13 +12,32 @@ from worklog.database.session import async_engine, async_session
 from worklog.main import app
 from worklog.models import Base, User
 
-default_user_id = "user_id"
-default_user_email = "geralt@wiedzmin.pl"
-default_user_password = "geralt"
-default_user_password_hash = security.get_password_hash(default_user_password)
-default_user_access_token = security.create_jwt_token(
-    str(default_user_id), 60 * 60 * 24, refresh=False
-)[0]
+
+def test_user(is_active=True, is_superuser=False) -> User:
+    return User(
+        id="f7bb15fa-0de1-4175-a677-c3cf2aef3ea8",
+        name='testuser',
+        email="testuser@testuser.com",
+        hashed_password=security.get_password_hash("testuser"),
+        is_active=is_active,
+        is_superuser=is_superuser,
+    )
+
+def test_jwt(user_id: str) -> str:
+    return security.create_jwt_token(user_id, 60 * 60 * 24 * 30, refresh=False)[0]
+
+
+@pytest.fixture
+def active_test_user():
+    return test_user()
+
+@pytest.fixture
+def inactive_test_user():
+    return test_user(is_active=False)
+
+@pytest.fixture
+def superuser_test_user():
+    return test_user(is_active=True, is_superuser=True)
 
 
 @pytest.fixture(scope="session")
@@ -56,18 +75,14 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest_asyncio.fixture
-async def default_user(test_db_setup) -> User:
+async def default_user(test_db_setup, active_test_user) -> User:
     async with async_session() as session:
         result = await session.execute(
-            select(User).where(User.email == default_user_email)
+            select(User).where(User.email == active_test_user.email)
         )
         user = result.scalars().first()
         if user is None:
-            new_user = User(
-                email=default_user_email,
-                hashed_password=default_user_password_hash,
-            )
-            new_user.id = default_user_id
+            new_user = active_test_user
             session.add(new_user)
             await session.commit()
             await session.refresh(new_user)
@@ -76,5 +91,5 @@ async def default_user(test_db_setup) -> User:
 
 
 @pytest.fixture
-def default_user_headers(default_user: User):
-    return {"Authorization": f"Bearer {default_user_access_token}"}
+def valid_jwt_token(default_user: User):
+    return {"Authorization": f"Bearer {test_user_access_token}"}

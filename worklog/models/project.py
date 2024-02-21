@@ -1,17 +1,3 @@
-"""
-
-Projekty:
-
-id (int, primary key)
-nazwa (string)
-opis (string)
-termin (date)
-budżet (float)
-klient_id (int, foreign key)
-
-
-"""
-
 import datetime
 import uuid
 
