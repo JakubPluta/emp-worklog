@@ -133,6 +133,52 @@ class CRUDRepository(Generic[ORMModelType, CreateSchemaType, UpdateSchemaType]):
         await session.refresh(db_obj)
         return db_obj
     
+    async def create_many(self, session: AsyncSession, objs_in: List[CreateSchemaType]) -> List[ORMModelType]:
+        """
+        Asynchronously creates multiple ORMModel instances and adds them to the session.
+
+        Args:
+            session (Session): The database session.
+            objs_in (List[CreateSchemaType]): The input data for creating the ORMModel instances.
+
+        Returns:
+            List[ORMModelType]: A list of newly created ORMModel instances.
+        """
+        objs_in_data = [obj.model_dump(exclude_unset=True, exclude_none=True) for obj in objs_in]
+        db_objs = [self._model(**obj_in_data) for obj_in_data in objs_in_data]  # type: ignore
+        session.add_all(db_objs)
+        await session.commit()
+        await session.refresh(db_objs)
+        return db_objs
+    
+    async def _create_many_from_orm_objects(self, session: AsyncSession, objs: List[ORMModelType]) -> List[ORMModelType]:
+        """
+        Asynchronously creates multiple ORMModel instances from a list of ORMModelType objects and adds them to the session.
+        Args:
+            session: The asynchronous session to use for creating the objects.
+            objs: The list of ORMModelType objects to create the new objects from.
+        Returns:
+            List[ORMModelType]: The newly created objects.
+        """
+        session.add_all(objs)
+        await session.commit()
+        return objs
+    
+    async def _create_from_orm_object(self, session: AsyncSession, obj: ORMModelType) -> ORMModelType:
+        """
+        Create an object from the given ORM object using the provided session. 
+        Args:
+            session: The asynchronous session to use for creating the object.
+            obj: The ORMModelType object to create the new object from.
+        Returns:
+            ORMModelType: The newly created object.
+        """
+        log.debug("creating %s with obj=%s", self._name, obj)
+        session.add(obj)
+        await session.commit()
+        return obj
+        
+    
     async def delete(self, session: AsyncSession, obj: ORMModelType) -> ORMModelType:
         """
         Asynchronously deletes the given ORMModel object using the provided session.

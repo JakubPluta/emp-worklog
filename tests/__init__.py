@@ -1,4 +1,4 @@
 import os
 
 
-os.environ['ENVIRONMENT'] = 'TEST'
+os.environ["ENVIRONMENT"] = "TEST"

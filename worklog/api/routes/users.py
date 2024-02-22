@@ -30,6 +30,8 @@ async def read_current_user(
     Returns:
         User: The current user.
     """
+    if current_user.is_active is False:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user")
     return current_user
 
 @router.get("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
