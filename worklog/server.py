@@ -6,7 +6,12 @@ from worklog.log import get_logger
 log = get_logger(__name__)
 
 if __name__ == "__main__":  # pragma: no cover
-    log.debug("starting server in %s mode on %s:%s", settings.ENVIRONMENT, settings.SERVER_HOST, settings.SERVER_PORT)
+    log.debug(
+        "starting server in %s mode on %s:%s",
+        settings.ENVIRONMENT,
+        settings.SERVER_HOST,
+        settings.SERVER_PORT,
+    )
     uvicorn.run(
         "worklog.main:app",
         host=settings.SERVER_HOST,

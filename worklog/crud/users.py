@@ -1,17 +1,17 @@
 from typing import List
-from sqlalchemy import select
 
+from pydantic import UUID4
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from worklog.crud.base import CRUDRepository
+from worklog.log import get_logger
 from worklog.models.users import User
 from worklog.schemas.auth import UserRegister
 from worklog.security import verify_password
-from worklog.log import get_logger
-from pydantic import UUID4
-
-from worklog.crud.base import CRUDRepository
 
 log = get_logger(__name__)
+
 
 class UserCRUD(CRUDRepository):
     async def get_user_by_email(self, session: AsyncSession, email: str) -> User | None:
@@ -28,7 +28,7 @@ class UserCRUD(CRUDRepository):
         log.debug("getting user with email=%s", email)
         results = await session.execute(select(User).where(User.email == email))
         return results.scalars().first()
-    
+
     async def is_superuser(self, session: AsyncSession, email: str) -> bool:
         """
         Asynchronously checks if a user is a superuser.
@@ -60,7 +60,7 @@ class UserCRUD(CRUDRepository):
         if not user:
             return False
         return user.is_active
-    
+
     async def create_user(self, session: AsyncSession, user: UserRegister) -> User:
         """
         Asynchronously creates a new user in the database.
@@ -78,8 +78,10 @@ class UserCRUD(CRUDRepository):
         await session.commit()
         await session.refresh(user_to_db)
         return user_to_db
-    
-    async def authenticate_user(self, session: AsyncSession, email: str, password: str) -> User | None:
+
+    async def authenticate_user(
+        self, session: AsyncSession, email: str, password: str
+    ) -> User | None:
         """
         Asynchronously authenticates a user by verifying the provided email and password.
 
@@ -99,16 +101,4 @@ class UserCRUD(CRUDRepository):
         return user
 
 
-            
-
 users_crud = UserCRUD(User)
-
-
-
-
-
-
-
-
-
-

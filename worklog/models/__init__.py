@@ -1,1 +1,1 @@
-from worklog.models.users import User, Base
+from worklog.models.users import Base, User

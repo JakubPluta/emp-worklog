@@ -5,14 +5,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
-from worklog.crud.users import users_crud
+
 from worklog import config, security
+from worklog.api.dependencies import get_current_user
+from worklog.crud.users import users_crud
 from worklog.database import get_db
 from worklog.models import User
-from worklog.schemas.auth import AccessToken, JWTTokenPayload, RefreshToken, UserRegister
-from worklog.schemas.users import UserCreate, UserInDB, UserOut, UserUpdate, UserUpdatePassowrd
+from worklog.schemas.auth import (AccessToken, JWTTokenPayload, RefreshToken,
+                                  UserRegister)
+from worklog.schemas.users import (UserCreate, UserInDB, UserOut, UserUpdate,
+                                   UserUpdatePassowrd)
 
-from worklog.api.dependencies import get_current_user
 router = APIRouter()
 
 
@@ -23,11 +26,11 @@ async def login_for_access_token(
 ):
     """
     An asynchronous function that handles the login process to obtain an access token.
-    
+
     Args:
         session (AsyncSession): The database session.
         form_data (OAuth2PasswordRequestForm): The form data containing the username and password.
-        
+
     Returns:
         AccessToken: The access token response.
     """
@@ -35,10 +38,16 @@ async def login_for_access_token(
     user = await users_crud.get_user_by_email(session, form_data.username)
 
     if user is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect email or password")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect email or password",
+        )
 
     if not security.verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Incorrect email or password")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect email or password",
+        )
 
     return security.generate_access_token_response(str(user.id))
 
@@ -49,9 +58,9 @@ async def refresh_token(
     session: AsyncSession = Depends(get_db),
 ):
     """
-    Refreshes the access token using the refresh token. 
+    Refreshes the access token using the refresh token.
     Validates the refresh token and generates a new access token.
-    
+
     Args:
         input (RefreshToken): The refresh token input.
         session (AsyncSession, optional): The async session for database access. Defaults to Depends(get_db).
@@ -89,10 +98,11 @@ async def refresh_token(
     user = await users_crud.get_one_by_id(session, token_data.sub)
 
     if user is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
 
     return security.generate_access_token_response(str(user.id))
-
 
 
 @router.post("/reset-password", response_model=UserOut)
@@ -113,7 +123,9 @@ async def reset_current_user_password(
         User: The current user with the updated password.
     """
 
-    current_user.hashed_password = security.get_password_hash(user_update_password.password)
+    current_user.hashed_password = security.get_password_hash(
+        user_update_password.password
+    )
     session.add(current_user)
     await session.commit()
     return current_user
@@ -137,7 +149,9 @@ async def register_new_user(
 
     user = await users_crud.get_user_by_email(session, new_user.email)
     if user is not None:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cannot use this email address")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Cannot use this email address"
+        )
     user = UserInDB(**new_user.dict())
     await users_crud.create_user(session, user)
     return user

@@ -22,7 +22,6 @@ PROJECT_DIR = Path(__file__).parent.parent
 PYPROJECT_CONTENT = _load_poetry_toml(PROJECT_DIR)
 
 
-
 class Settings(BaseSettings):
     SECRET_KEY: str
     ENVIRONMENT: Literal["DEV", "TEST", "PROD"] = "DEV"
@@ -32,10 +31,9 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
     BACKEND_CORS_ORIGINS: list[AnyHttpUrl] = []
     ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1", "0.0.0.0"]
-    
+
     SERVER_HOST: str
     SERVER_PORT: int
-    
 
     PROJECT_NAME: str = PYPROJECT_CONTENT["name"]
     VERSION: str = PYPROJECT_CONTENT["version"]

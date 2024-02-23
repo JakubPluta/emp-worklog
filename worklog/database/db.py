@@ -18,7 +18,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 @contextmanager
-async def get_ctx_db() -> Generator:
+async def get_ctx_db() -> AsyncGenerator[AsyncSession, None]:  # type: ignore
     """Context manager that creates an async database session and
     yields it for use in a 'with' statement."""
     async with async_session() as db_session:

@@ -24,19 +24,19 @@ class Timelog(Base):
     hours: Mapped[int] = mapped_column(Integer, nullable=False)
     minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     note: Mapped[str] = mapped_column(String(254), nullable=True)
-    
-    @validates('hours')
+
+    @validates("hours")
     def validate_hours(self, key, value):
         if value < 0:
-            raise ValueError('Hours cannot be negative')
+            raise ValueError("Hours cannot be negative")
         if value > 24:
-            raise ValueError('Hours cannot be greater than 24')
+            raise ValueError("Hours cannot be greater than 24")
         return value
-    
-    @validates('minutes')
+
+    @validates("minutes")
     def validate_minutes(self, key, value):
         if value < 0:
-            raise ValueError('Minutes cannot be negative')
+            raise ValueError("Minutes cannot be negative")
         if value >= 60:
-            raise ValueError('Minutes cannot be greater or equal than 60')
+            raise ValueError("Minutes cannot be greater or equal than 60")
         return value

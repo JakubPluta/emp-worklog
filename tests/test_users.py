@@ -1,7 +1,9 @@
-from httpx import AsyncClient, codes
 import pytest
+from httpx import AsyncClient, codes
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from tests.utils import MOCKED_USERS
 from worklog.main import app
 from worklog.models import User
 
@@ -15,18 +17,119 @@ async def test_read_current_user(client: AsyncClient, active_user_jwt_token):
         "id": "f7bb15fa-0de1-4175-a677-c3cf2aef3ea8",
     }
 
+
 async def test_read_current_user_unauthorized(client: AsyncClient):
     response = await client.get("/users/me")
     assert response.status_code == codes.UNAUTHORIZED
 
+
 async def test_read_current_user_inactive(client: AsyncClient, inactive_user_jwt_token):
     response = await client.get("/users/me", headers=inactive_user_jwt_token)
     assert response.status_code == codes.UNAUTHORIZED
-    
 
-async def test_read_all_users(client: AsyncClient, super_user_jwt_token, many_users):
-    response = await client.get("/users/", headers=super_user_jwt_token)
-    assert response.status_code == codes.OK
-    assert len(response.json()) == len(many_users)
+
+@pytest.mark.parametrize(
+    "offset, limit, status_code",
+    [
+        (0, 5, 200),
+        (2, 5, 200),
+        (5, 1, 200),
+        (1, 0, 422),
+    ],
+)
+async def test_read_all_users_with_pagination(
+    client: AsyncClient, super_user_jwt_token, offset, limit, status_code
+):
+    response = await client.get(
+        f"/users/?offset={offset}&limit={limit}", headers=super_user_jwt_token
+    )
+    assert response.status_code == status_code
+    if status_code == 200:
+        assert len(response.json()) and len(response.json()) == limit
+
+
+async def test_read_all_users_unauthorized(client: AsyncClient):
+    response = await client.get("/users/")
+    assert response.status_code == codes.UNAUTHORIZED
+
+
+@pytest.mark.parametrize(
+    "email, status_code",
+    [
+        *[(u["email"], 200) for u in MOCKED_USERS[:3]],
+        ("notexist@testuser.com", 404),
+    ],
+)
+async def test_read_user_by_eamil(
+    client: AsyncClient, super_user_jwt_token, email: str, status_code: int
+):
+    response = await client.get(f"/users/email/{email}", headers=super_user_jwt_token)
+    assert response.status_code == status_code
+
+
+@pytest.mark.parametrize(
+    "id, status_code",
+    [
+        *[(u["id"], 200) for u in MOCKED_USERS[:3]],
+        ("notexist@testuser.com", 422),
+        ("77ead757-c5af-4594-ae25-1596d482a12b", 404),
+    ],
+)
+async def test_read_user_by_id(
+    client: AsyncClient, super_user_jwt_token, id: str, status_code: int
+):
+    response = await client.get(f"/users/{id}", headers=super_user_jwt_token)
+    assert response.status_code == status_code
+
+
+async def test_create_user(client: AsyncClient, super_user_jwt_token):
+    response = await client.post(
+        "/users/",
+        json={
+            "name": "abc",
+            "email": "abc@abc.com",
+            "password": "abc",
+        },
+        headers=super_user_jwt_token,
+    )
+    data = response.json()
+    assert response.status_code == 201
+    
+    user = await client.get(f"/users/{data['id']}", headers=super_user_jwt_token)
+    assert user.json()['id'] == data['id']
+    
+async def test_cannot_create_use_if_email_exists(client: AsyncClient, super_user_jwt_token):
+    response = await client.post(
+        "/users/",
+        json={
+            "name": "zxc",
+            "email": "zxc@zxc.com",
+            "password": "zxc",
+        },
+        headers=super_user_jwt_token,
+    )
+    assert response.status_code == 201
+    
+    response = await client.post(
+        "/users/",
+        json={
+            "name": "zxc",
+            "email": "zxc@zxc.com",
+            "password": "zxc",
+        },
+        headers=super_user_jwt_token,
+    )
+    assert response.status_code == 409
     
     
+async def test_cannot_create_user_if_not_superuser(client: AsyncClient, active_user_jwt_token):
+    response = await client.post(
+        "/users/",
+        json={
+            "name": "zxc",
+            "email": "zxc@zxc.com",
+            "password": "zxc",
+        },
+        headers=active_user_jwt_token,
+    )
+    assert response.status_code == 403

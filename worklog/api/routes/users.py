@@ -1,27 +1,35 @@
 from typing import List, Tuple
+
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import UUID4, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from worklog.api.dependencies import get_current_superuser, get_pagination_offset_and_limit, get_current_user
-from worklog.crud.users import users_crud, UserCRUD
-from worklog.security import get_password_hash
+from worklog.api.dependencies import (get_current_superuser, get_current_user,
+                                      get_pagination_offset_and_limit)
+from worklog.crud.users import UserCRUD, users_crud
+from worklog.database.db import get_db
 from worklog.models import User
 from worklog.schemas.auth import AccessToken, JWTTokenPayload, RefreshToken
-from worklog.schemas.users import UserCreate, UserInDB, UserOut, UserUpdate, UserUpdateSelf
-from worklog.database.db import get_db
-from pydantic import UUID4, EmailStr
+from worklog.schemas.users import (UserCreate, UserInDB, UserOut, UserUpdate,
+                                   UserUpdateSelf)
+from worklog.security import get_password_hash
 
 users_crud: UserCRUD
 
 router = APIRouter()
 
 
-@router.get("/me", response_model=UserOut, response_model_exclude=['is_active'], status_code=status.HTTP_200_OK)
+@router.get(
+    "/me",
+    response_model=UserOut,
+    response_model_exclude=["is_active"],
+    status_code=status.HTTP_200_OK,
+)
 async def read_current_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
     """
-    Retrieve the current user. 
+    Retrieve the current user.
 
     Args:
         current_user (User, optional): The current user.
@@ -31,14 +39,17 @@ async def read_current_user(
         User: The current user.
     """
     if current_user.is_active is False:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user"
+        )
     return current_user
+
 
 @router.get("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def read_user(
     user_id: UUID4,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_superuser)
+    _: User = Depends(get_current_superuser),
 ) -> User:
     """
     Async function to retrieve a user by their ID.
@@ -52,14 +63,17 @@ async def read_user(
     """
     user = await users_crud.get_one_by_id(session, user_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
     return user
+
 
 @router.get("/email/{email}", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def read_user_by_email(
     email: str | EmailStr,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_superuser)
+    _: User = Depends(get_current_superuser),
 ) -> User:
     """
     Async function to retrieve a user by their email address.
@@ -73,14 +87,17 @@ async def read_user_by_email(
     """
     user = await users_crud.get_user_by_email(session, email)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
     return user
+
 
 @router.get("/", response_model=List[UserOut], status_code=status.HTTP_200_OK)
 async def read_users(
     pagination: Tuple[int, int] = Depends(get_pagination_offset_and_limit),
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_superuser)
+    _: User = Depends(get_current_superuser),
 ) -> list[User]:
     """
     A function to retrieve a list of users with pagination support.
@@ -94,17 +111,16 @@ async def read_users(
     """
     offset, limit = pagination
     return await users_crud.get_many(session, offset=offset, limit=limit)
- 
 
 
 @router.post("/", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_in: UserCreate,
     session: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_superuser)
+    _: User = Depends(get_current_superuser),
 ):
     """
-    Create a new user with the provided user data. 
+    Create a new user with the provided user data.
     Args:
         user_in (UserCreate): The user input data for creating a new user.
         session (AsyncSession, optional): The async session for database operations. Defaults to Depends(get_db).
@@ -113,7 +129,9 @@ async def create_user(
     """
     user = await users_crud.get_user_by_email(session, user_in.email)
     if user:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
+        )
     user = UserInDB(
         **user_in.model_dump(),
         hashed_password=get_password_hash(user_in.password),
@@ -121,8 +139,11 @@ async def create_user(
     try:
         user = await users_crud.create_user(session, user)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from e
     return user
+
 
 @router.patch("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def update_user(
@@ -144,13 +165,18 @@ async def update_user(
     """
     user = await users_crud.get_one_by_id(session, user_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
     try:
         user = await users_crud.update_user(session, user, user_in)
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from e
     return user
+
 
 @router.patch("/me", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def update_myself(
@@ -171,7 +197,9 @@ async def update_myself(
     """
     user = await users_crud.get_one_by_id(session, current_user.id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
     user = await users_crud.update_user(session, user, user_in)
     return user
 
@@ -195,5 +223,7 @@ async def delete_user(
     """
     user = await users_crud.get_one_by_id(session, user_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
     await users_crud.delete(session, user)
