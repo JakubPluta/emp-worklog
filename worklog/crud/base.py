@@ -222,3 +222,24 @@ class CRUDRepository(Generic[ORMModelType, CreateSchemaType, UpdateSchemaType]):
         await session.delete(obj)
         await session.commit()
         return obj
+
+
+    async def update(self, session: AsyncSession, obj: ORMModelType, obj_in: UpdateSchemaType) -> ORMModelType:
+        """
+        Asynchronously updates the given ORMModel object using the provided session and input data.
+
+        Args:
+            session (Session): The database session to use for the update.
+            obj (ORMModel): The object to be updated in the database.
+            obj_in (UpdateSchemaType): The input data for the update.
+
+        Returns:
+            ORMModel: The updated object.
+        """
+        update_data = obj_in.model_dump(exclude_unset=True, exclude_none=True)
+        for field, value in update_data.items():
+            setattr(obj, field, value)
+        session.add(obj)
+        await session.commit()
+        await session.refresh(obj)
+        return obj

@@ -25,3 +25,7 @@ docker-down:
 
 dev:
 	python -m worklog.server
+
+
+test:
+	pytest tests -v -s

@@ -8,8 +8,11 @@ class UserBase(BaseModel):
 
 
 class UserUpdate(UserBase):
-    password: str
-    is_superuser: bool = False
+    name: str | None = None
+    email: str | None = None
+    password: str | None = None
+    is_superuser: bool | None = None
+    is_active: bool | None = None
 
 
 class UserUpdatePassowrd(BaseModel):
@@ -33,6 +36,5 @@ class UserOut(UserBase):
 
 
 class UserUpdateSelf(BaseModel):
-    email: EmailStr
     name: str
     password: str | None = None

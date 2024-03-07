@@ -145,39 +145,6 @@ async def create_user(
     return user
 
 
-@router.patch("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
-async def update_user(
-    user_id: UUID4,
-    user_in: UserCreate,
-    session: AsyncSession = Depends(get_db),
-    user: User = Depends(get_current_superuser),
-):
-    """
-    Update a user's data.
-
-    Args:
-        user_id (UUID4): The ID of the user to update.
-        user_in (UserCreate): The updated user data.
-        session (AsyncSession, optional): The async session for database operations. Defaults to Depends(get_db).
-
-    Returns:
-        UserOut: The updated user data.
-    """
-    user = await users_crud.get_one_by_id(session, user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
-
-    try:
-        user = await users_crud.update_user(session, user, user_in)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        ) from e
-    return user
-
-
 @router.patch("/me", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def update_myself(
     user_in: UserUpdateSelf,
@@ -200,8 +167,43 @@ async def update_myself(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
-    user = await users_crud.update_user(session, user, user_in)
+    user = await users_crud.update(session, user, user_in)
     return user
+
+@router.patch("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
+async def update_user(
+    user_id: UUID4,
+    user_in: UserUpdate,
+    session: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_superuser),
+):
+    """
+    Update a user's data.
+
+    Args:
+        user_id (UUID4): The ID of the user to update.
+        user_in (UserCreate): The updated user data.
+        session (AsyncSession, optional): The async session for database operations. Defaults to Depends(get_db).
+
+    Returns:
+        UserOut: The updated user data.
+    """
+    user = await users_crud.get_one_by_id(session, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    try:
+        user = await users_crud.update(session, user, user_in)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from e
+    return user
+
+
+
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
