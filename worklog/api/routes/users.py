@@ -170,6 +170,7 @@ async def update_myself(
     user = await users_crud.update(session, user, user_in)
     return user
 
+
 @router.patch("/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def update_user(
     user_id: UUID4,
@@ -201,9 +202,6 @@ async def update_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         ) from e
     return user
-
-
-
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
